@@ -1,15 +1,34 @@
 # Xml
 #
-# cell = { x : int, y : int, contents : string }
+#<?xml?>
+#<crossword-compiler-applet >
+#  <rectangular-puzzle>
+#   <metadata>
+#     <title>string</title>
+#     <creator>string</creator>
+#     <copyright>string</copyright>
+#   </metadata>
 #
-# xword = { rows : int, 
-#           cols : int, 
-#           cells : [cell],
-#           across : [string]
-#           down : [string]
-#         }
-
+#   <crossword>
+#     <grid width="int" height="int">
+#       <cell x="int" y="int" solution="char" number="int"></cell>,
+#       <cell x="int" y="int" solution="char"></cell>,
+#       <cell x="1" y="5" type="block"></cell>,
+#     </grid>
+#     <clues ordering="normal">
+#       <title><b>Across</b></title>
+#       <clue word="1" number="1" format="8">string</clue>,
+#     </clues>
+#     <clues ordering="normal">
+#       <title><b>Down</b></title>
+#       <clue word="13" number="1" format="4">string</clue>,
+#     </clues>
+#   </crossword>
+# </rectangular-puzzle>
+#</crossword-compiler-applet>
+     
 require 'rexml/document'
+include REXML
 
 module Pangrid
 
@@ -17,60 +36,44 @@ class Xml < Plugin
 
   DESCRIPTION = "Simple XML format"
 
-  def write(xw)
-    cells = []
-#    (0 ... xw.height).each do |y|
-#      (0 ... xw.width).each do |x|
-#        cell = xw.solution[y][x]
-#        s = case cell.solution
-#            when :black; '#'
-#            when :null; ''
-#            when Rebus; cell.solution.inspect
-#            else; cell.solution
-#            end
-#
-#        cells.push({ x: x, y: y, contents: s })
-#      end
-#    end
-#
-#    h = {
-#      rows: xw.height,
-#      cols: xw.width,
-#      cells: cells,
-#      across: xw.across_clues,
-#      down: xw.down_clues
-#    }
-#
-#    ::JSON.generate(h)
-  end
-
   def read(data)
-#    json = ::JSON.parse(data)
-#    xw = XWord.new
-#
-#    xw.height = json['rows']
-#    xw.width = json['cols']
-#    xw.solution = Array.new(xw.height) { Array.new(xw.width) }
-#    json['cells'].each do |c|
-#      cell = Cell.new
-#      s = c['contents']
-#      cell.solution =
-#        case s
-#        when ""; :null
-#        when "#"; :black
-#        else
-#          if s.length == 1
-#            s
-#          else
-#            Rebus.new s
-#          end
-#        end
-#      x, y = c['x'], c['y']
-#      xw.solution[y][x] = cell
-#    end
-#    xw.across_clues = json['across']
-#    xw.down_clues = json['down']
-#    xw
+    doc = Document.new data
+    xw = XWord.new
+    root = doc.root
+
+    xw.title = root.elements["*/*/title"].text
+    xw.author = root.elements["*/*/creator"].text
+    xw.copyright = root.elements["*/*/copyright"].text
+    
+    grid = root.elements["*/*/grid"]
+    xw.height = grid.attributes["height"].to_i
+    xw.width = grid.attributes["width"].to_i
+    xw.solution = Array.new(xw.height) { Array.new(xw.width) }
+
+    root.each_element('//cell') do |c|
+      cell = Cell.new
+      if c.attributes["type"]  then cell.solution = '#' #and c.type == "block"
+      else       cell.solution = c.attributes["solution"]
+      end
+      x, y = c.attributes["x"].to_i, c.attributes["y"].to_i
+      xw.solution[y-1][x-1] = cell
+    end
+
+    across_clues = root.elements["*/*/clues"]
+    down_clues = across_clues.next_element
+
+    xw.across_clues = []
+    across_clues.each_element('clue') do |clue|
+        xw.across_clues << clue.text
+    end
+    xw.down_clues = []
+    down_clues.each_element('clue') do |clue|
+        xw.down_clues << clue.text
+    end
+
+    
+puts xw.inspect
+    xw
   end
 
 end
