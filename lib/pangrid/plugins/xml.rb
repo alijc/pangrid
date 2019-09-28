@@ -64,11 +64,11 @@ class Xml < Plugin
 
     xw.across_clues = []
     across_clues.each_element('clue') do |clue|
-        xw.across_clues << clue.text
+        xw.across_clues << clue.text + " (" + clue.attributes["format"] + ")"
     end
     xw.down_clues = []
     down_clues.each_element('clue') do |clue|
-        xw.down_clues << clue.text
+        xw.down_clues << clue.text + " (" + clue.attributes["format"] + ")"
     end
 
     
