@@ -41,6 +41,8 @@ class Xml < Plugin
     xw = XWord.new
     root = doc.root
 
+    xw.version = 2
+
     xw.title = root.elements["*/*/title"].text
     xw.author = root.elements["*/*/creator"].text
     xw.copyright = root.elements["*/*/copyright"].text
@@ -50,13 +52,17 @@ class Xml < Plugin
     xw.width = grid.attributes["width"].to_i
     xw.solution = Array.new(xw.height) { Array.new(xw.width) }
 
+# <cell x="int" y="int" solution="char" number="int"></cell>,
     root.each_element('//cell') do |c|
       cell = Cell.new
-      if c.attributes["type"]  then cell.solution = '#' #and c.type == "block"
+      if c.attributes["type"]  then cell.solution = :black
       else       cell.solution = c.attributes["solution"]
       end
       x, y = c.attributes["x"].to_i, c.attributes["y"].to_i
       xw.solution[y-1][x-1] = cell
+      if c.attributes["number"] then
+        xw.solution[y-1][x-1].number = c.attributes["number"].to_i
+      end
     end
 
     across_clues = root.elements["*/*/clues"]
@@ -71,8 +77,6 @@ class Xml < Plugin
         xw.down_clues << clue.text + " (" + clue.attributes["format"] + ")"
     end
 
-    
-puts xw.inspect
     xw
   end
 
